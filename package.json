@@ -1,0 +1,25 @@
+{
+  "name": "express-plug",
+  "version": "1.0.0",
+  "description": "Support you to add plugs into your express app",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/furqanaziz/express-plug.git"
+  },
+  "keywords": [
+    "plugins"
+  ],
+  "author": "Furqan Aziz <furqan.dvlcloud@gmail.com>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/furqanaziz/express-plug/issues"
+  },
+  "homepage": "https://github.com/furqanaziz/express-plug#readme",
+  "dependencies": {
+    "caller-id": "^0.1.0"
+  }
+}
