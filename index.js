@@ -3,17 +3,11 @@ var path = require('path');
 var callerId = require('caller-id');
 
 var registered = {
-  app: {},
-  model: {},
-  route: {},
-  service: {},
-  controller: {},
+  apps: {},
+  modules: {},
 };
 
-var add = function(_type, _name, _path) {
-  if(!registered.hasOwnProperty(_type)) {
-    throw Error('Invalid register type passed.');
-  }
+var add = function(_name, _path) {
   if(!_name || !_path) {
     throw Error('Path and name cannont be empty.');
   }
@@ -22,16 +16,28 @@ var add = function(_type, _name, _path) {
   var filepath = path.resolve(caller, _path);
 
   // TODO: Check if file does not exists and throw error
-  return registered[_type][_name] = filepath;
+  return registered.modules[_name] = filepath;
 };
 
-var get = function(_type, _name, _default) {
-  if(!registered.hasOwnProperty(_type)) {
-    throw Error('Invalid register type passed.');
+var get = function(_name, _default) {
+  var mod = (_name ? registered.modules[_name] : registered.modules) || _default || false;
+  return fs.existsSync(mod) ? require(mod.replace('.js', '')) : mod;
+};
+
+var addApp = function(_name, _path) {
+  if(!_name || !_path) {
+    throw Error('Path and name cannont be empty.');
   }
 
-  var mod = (_name ? registered[_type][_name] : registered[_type]) || _default || false;
-  return fs.existsSync(mod + '.js') ? require(mod) : mod;
+  var caller = callerId.getData().filePath.split(path.sep).slice(0, -1).join(path.sep);
+  var filepath = path.resolve(caller, _path);
+
+  // TODO: Check if file does not exists and throw error
+  return registered.apps[_name] = filepath;
+};
+
+var getApps = function() {
+  return registered.apps;
 };
 
 var remove = function(_type, _name) {
@@ -44,62 +50,54 @@ var remove = function(_type, _name) {
   delete registered[_type][_name];
 };
 
+var walk = function(dir, done) {
+  var results = [];
+  var list = fs.readdirSync(dir);
+  var pending = list.length;
+  if(!pending) {
+    return done(null, results);
+  }
+  list.forEach(function(file) {
+    file = path.resolve(dir, file);
+    var stat = fs.statSync(file);
+
+    if(stat && stat.isDirectory()) {
+      walk(file, function(err, res) {
+        results = results.concat(res);
+        if(!--pending) {
+          done(null, results);
+        }
+      });
+    } else {
+      if(file.indexOf('.js') > 0) {
+        results.push(file);
+      }
+      if(!--pending) {
+        done(null, results);
+      }
+    }
+  });
+};
+
+var register = function(_name, _path) {
+  walk(_path, function(err, results) {
+    if(err) {
+      throw err;
+    }
+
+    results.forEach(function(file) {
+      var name = file.replace(_path, _name).replace('.js', '');
+      add(name, file);
+    });
+  });
+};
+
 module.exports = {
   get: get,
   add: add,
+  walk: walk,
+  addApp: addApp,
   remove: remove,
+  getApps: getApps,
+  register: register,
 };
-
-//
-// module.exports = omfg
-//
-// function omfg() {
-//   var caller = getCaller()
-//   console.log(caller.filename)
-// }
-//
-// // private
-//
-// function getCaller() {
-//   var stack = getStack()
-//
-//   // Remove superfluous function calls on stack
-//   stack.shift() // getCaller --> getStack
-//   stack.shift() // omfg --> getCaller
-//
-//   // Return caller's caller
-//   return stack[1].receiver
-// }
-//
-// function getStack() {
-//   // Save original Error.prepareStackTrace
-//   var origPrepareStackTrace = Error.prepareStackTrace
-//
-//   // Override with function that just returns `stack`
-//   Error.prepareStackTrace = function (_, stack) {
-//     return stack
-//   }
-//
-//   // Create a new `Error`, which automatically gets `stack`
-//   var err = new Error()
-//
-//   // Evaluate `err.stack`, which calls our new `Error.prepareStackTrace`
-//   var stack = err.stack
-//
-//   // Restore original `Error.prepareStackTrace`
-//   Error.prepareStackTrace = origPrepareStackTrace
-//
-//   // Remove superfluous function call on stack
-//   stack.shift() // getStack --> Error
-//
-//   return stack
-// }
-// And a test that includes omfg module:
-//
-//   #!/usr/bin/env node
-// // test.js
-//
-// var omfg = require("./omfg")
-//
-// omfg()
-
