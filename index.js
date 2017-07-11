@@ -106,7 +106,7 @@ var register = function(_name, _path) {
     }
 
     results.forEach(function(file) {
-      var name = file.replace(_path, _name).replace('.js', '');
+      var name = file.replace(_path, _name).replace('.js', '').replace(/\\/g, '/');
       add(name, file);
     });
   });
