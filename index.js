@@ -24,20 +24,40 @@ var get = function(_name, _default) {
   return fs.existsSync(mod) ? require(mod.replace('.js', '')) : mod;
 };
 
-var addApp = function(_name, _path) {
-  if(!_name || !_path) {
+var addApp = function(_name, _dirname, _routes) {
+  if(!_name || !_dirname) {
     throw Error('Path and name cannont be empty.');
   }
 
   var caller = callerId.getData().filePath.split(path.sep).slice(0, -1).join(path.sep);
-  var filepath = path.resolve(caller, _path);
+  var filepath = path.resolve(caller, _dirname);
+  var routePath = path.resolve(caller, (_routes || ''));
 
   // TODO: Check if file does not exists and throw error
-  return registered.apps[_name] = filepath;
+  return registered.apps[_name] = {
+    'routes': _routes ? [routePath] : [],
+    'dirname': filepath,
+  };
 };
 
-var getApps = function() {
-  return registered.apps;
+var addRoutes = function(_name, _routes) {
+  if(!_name || !_routes) {
+    throw Error('Routes and name cannont be empty.');
+  }
+
+  if(!registered.apps[_name]) {
+    throw Error('Invalid app name.');
+  }
+
+  var caller = callerId.getData().filePath.split(path.sep).slice(0, -1).join(path.sep);
+  var routePath = path.resolve(caller, _routes);
+
+  // TODO: Check if file does not exists and throw error
+  return registered.apps[_name].routes.push(routePath);
+};
+
+var getApps = function(_name) {
+  return (_name ? registered.apps[_name] : registered.apps);
 };
 
 var remove = function(_type, _name) {
@@ -100,4 +120,5 @@ module.exports = {
   remove: remove,
   getApps: getApps,
   register: register,
+  addRoutes: addRoutes,
 };
